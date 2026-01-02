@@ -8,10 +8,9 @@ export async function POST(req: Request) {
       data: {
         nama: body.nama,
         harga: parseInt(body.harga),
-        kategori: body.kategori,
+        categoryId: parseInt(body.categoryId),
         gambar: body.gambar || 'default.jpg',
         deskripsi: body.deskripsi,
-        isReady: true
       }
     });
     return NextResponse.json(newMenu);

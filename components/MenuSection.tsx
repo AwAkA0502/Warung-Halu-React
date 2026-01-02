@@ -7,14 +7,15 @@ export default function MenuSection({ onCheckout }: { onCheckout: (cart: any[], 
   const [cart, setCart] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Ambil data dari MySQL via API Next.js
   useEffect(() => {
     fetch('/api/menu')
       .then(res => res.json())
       .then(data => {
-        setMenus(data);
+        // Safety check: pastikan data adalah array
+        setMenus(Array.isArray(data) ? data : []);
         setLoading(false);
-      });
+      })
+      .catch(err => console.error("Gagal load menu", err));
   }, []);
 
   const addToCart = (item: any) => {
@@ -26,9 +27,10 @@ export default function MenuSection({ onCheckout }: { onCheckout: (cart: any[], 
     }
   };
 
+  // --- PERUBAHAN LOGIKA FILTER DISINI ---
   const filteredMenus = filter === "semua" 
     ? menus 
-    : menus.filter(m => m.kategori === filter);
+    : menus.filter(m => m.category?.name === filter); // Menggunakan m.category.name
 
   if (loading) return <p className="text-center py-20 text-xl font-bold">Sedang memuat menu lezat...</p>;
 
@@ -36,9 +38,9 @@ export default function MenuSection({ onCheckout }: { onCheckout: (cart: any[], 
     <section id="menu-page" className="py-16 px-6 max-w-7xl mx-auto">
       <h2 className="text-4xl font-bold text-center mb-12 text-gray-800 italic">Menu Halu</h2>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs - SESUAIKAN DENGAN NAMA DI SEED.TS */}
       <div className="flex flex-wrap justify-center gap-3 mb-10">
-        {["semua", "makanan-pedas", "makanan-manis", "minuman"].map(cat => (
+        {["semua", "Makanan Pedas", "Makanan Manis", "Minuman"].map(cat => (
           <button 
             key={cat}
             onClick={() => setFilter(cat)}
@@ -46,7 +48,7 @@ export default function MenuSection({ onCheckout }: { onCheckout: (cart: any[], 
               filter === cat ? 'bg-[#FFC107] text-white shadow-lg' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            {cat.replace('-', ' ').toUpperCase()}
+            {cat.toUpperCase()}
           </button>
         ))}
       </div>
@@ -55,11 +57,31 @@ export default function MenuSection({ onCheckout }: { onCheckout: (cart: any[], 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredMenus.map((item) => (
           <div key={item.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow border border-gray-100">
-            <img src={`/images/${item.gambar}`} alt={item.nama} className="w-full h-52 object-cover" />
+            <img 
+              src={`/images/${item.gambar}`} 
+              alt={item.nama} 
+              className="w-full h-52 object-cover" 
+              onError={(e) => { (e.target as HTMLImageElement).src = '/images/default.jpg' }} // Fallback jika gambar error
+            />
             <div className="p-5">
               <h3 className="text-xl font-bold text-gray-800">{item.nama}</h3>
-              {item.level > 0 && <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">Level {item.level}</span>}
-              <p className="text-[#a52a2a] text-xl font-black mt-2">Rp {item.harga.toLocaleString()}</p>
+              
+              {/* Menampilkan Nama Kategori dari Relasi */}
+              <p className="text-xs text-blue-500 font-bold uppercase mt-1">
+                {item.category?.name}
+              </p>
+
+              {/* Level pedas (Optional Chaining agar tidak crash jika level dihapus) */}
+              {item.level > 0 && (
+                <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                  Level {item.level}
+                </span>
+              )}
+
+              <p className="text-[#a52a2a] text-xl font-black mt-2">
+                Rp {item.harga.toLocaleString()}
+              </p>
+              
               <button 
                 onClick={() => addToCart(item)}
                 className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-xl transition"
@@ -71,7 +93,7 @@ export default function MenuSection({ onCheckout }: { onCheckout: (cart: any[], 
         ))}
       </div>
       
-      {/* Tombol Melayang untuk Lihat Keranjang jika cart tidak kosong */}
+      {/* Tombol Checkout */}
       {cart.length > 0 && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
             <button 

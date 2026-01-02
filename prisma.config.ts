@@ -9,6 +9,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Tambahkan tanda seru (!) di akhir untuk memberitahu TypeScript bahwa 
+    // variabel ini pasti ada di Environment Variables (Vercel/Aiven)
+    url: process.env["DATABASE_URL"]!,
   },
 });

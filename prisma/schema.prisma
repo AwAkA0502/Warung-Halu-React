@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -8,35 +7,49 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Order {
-  id           Int      @id @default(autoincrement())
-  customerName String
-  whatsapp     String
-  orderType    String @default("Dine In")   // "Dine In" atau "Take Away"
-  tableNumber  Int?     // Bisa kosong (null) jika Take Away
-  address      String?
-  notes        String?
-  items        Json
-  total        Float
-  status       String   @default("Pending")
-  createdAt    DateTime @default(now())
-}
-
-model Feedback {
-  id        Int      @id @default(autoincrement())
-  name      String?
-  email     String
-  message   String   @db.Text   
-  createdAt DateTime @default(now())
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  menus Menu[]
 }
 
 model Menu {
-  id        Int      @id @default(autoincrement())
-  nama      String
-  harga     Float
-  kategori  String   // makanan-pedas, makanan-manis, minuman
-  gambar    String   // nama file di folder public/images/
-  level     Int      @default(0) // 0-3 sesuai logika server.cjs kamu
-  deskripsi String?  @db.Text
-  isReady   Boolean  @default(true)
+  id          Int         @id @default(autoincrement())
+  nama        String
+  harga       Float
+  gambar      String?
+  categoryId  Int
+  category    Category    @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+}
+
+model Table {
+  id     Int     @id @default(autoincrement())
+  number Int     @unique
+  status String  @default("Available") 
+  qrUrl  String?
+  orders Order[]
+}
+
+model Order {
+  id           Int         @id @default(autoincrement())
+  customerName String
+  whatsapp     String
+  orderType    String
+  total        Float
+  status       String      @default("Pending") // "Pending" | "Selesai"
+  createdAt    DateTime    @default(now())
+  tableId      Int?
+  table        Table?      @relation(fields: [tableId], references: [id])
+  orderItems   OrderItem[]
+}
+
+model OrderItem {
+  id      Int   @id @default(autoincrement())
+  qty     Int
+  price   Float
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id])
+  menuId  Int
+  menu    Menu  @relation(fields: [menuId], references: [id])
 }

@@ -1,52 +1,42 @@
-import { prisma } from '@/lib/prisma'; 
+import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Validasi sederhana
-    if (!body.nama || !body.whatsapp || !body.items) {
-      return NextResponse.json(
-        { error: "Data tidak lengkap" }, 
-        { status: 400 }
-      );
-    }
-
-    // Simpan ke database MySQL menggunakan Prisma
     const newOrder = await prisma.order.create({
       data: {
         customerName: body.nama,
         whatsapp: body.whatsapp,
-        address: body.alamat,
-        orderType: body.orderType || "Dine In", 
-        tableNumber: body.tableNumber ? parseInt(body.tableNumber) : null,
-        notes: body.catatan || "",
-        total: parseFloat(body.total), // Pastikan angka
-        items: body.items, // Prisma otomatis mengurus array/object untuk tipe Json
-        status: "Pending"
+        orderType: body.orderType,
+        total: parseFloat(body.total),
+        // Hubungkan ke Meja jika Dine In
+        table: body.tableNumber ? {
+          connect: { number: parseInt(body.tableNumber) }
+        } : undefined,
+        // Simpan Detail Item (Relasi OrderItem)
+        orderItems: {
+          create: body.items.map((item: any) => ({
+            qty: item.qty,
+            price: item.harga,
+            menuId: item.id
+          }))
+        }
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Pesanan berhasil dibuat",
-      data: newOrder 
-    });
+    // Jika Dine In, ubah status Meja jadi Occupied
+    if (body.orderType === "Dine In" && body.tableNumber) {
+      await prisma.table.update({
+        where: { number: parseInt(body.tableNumber) },
+        data: { status: "Occupied" }
+      });
+    }
 
+    return NextResponse.json({ success: true, data: newOrder });
   } catch (error) {
-    console.error("Gagal simpan order:", error);
-    return NextResponse.json(
-      { error: "Gagal memproses pesanan ke database" }, 
-      { status: 500 }
-    );
+    console.error(error);
+    return NextResponse.json({ error: "Gagal simpan" }, { status: 500 });
   }
-}
-
-// Tambahkan ini jika kamu ingin mencegah error 405 saat iseng buka via browser (GET)
-export async function GET() {
-    return NextResponse.json(
-        { message: "API ini hanya menerima POST request untuk pesanan" },
-        { status: 405 }
-    );
 }

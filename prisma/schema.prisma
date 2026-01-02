@@ -18,7 +18,8 @@ model Menu {
   nama        String
   harga       Float
   gambar      String?
-  categoryId  Int
+  deskripsi   String?     @db.Text    
+  categoryId  Int           
   category    Category    @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
 }

@@ -10,7 +10,6 @@ export async function POST(req: Request) {
         harga: parseInt(body.harga),
         kategori: body.kategori,
         gambar: body.gambar || 'default.jpg',
-        level: parseInt(body.level || 0),
         deskripsi: body.deskripsi,
         isReady: true
       }

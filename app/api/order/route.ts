@@ -11,11 +11,9 @@ export async function POST(req: Request) {
         whatsapp: body.whatsapp,
         orderType: body.orderType,
         total: parseFloat(body.total),
-        // Hubungkan ke Meja jika Dine In
         table: body.tableNumber ? {
           connect: { number: parseInt(body.tableNumber) }
         } : undefined,
-        // Simpan Detail Item (Relasi OrderItem)
         orderItems: {
           create: body.items.map((item: any) => ({
             qty: item.qty,
